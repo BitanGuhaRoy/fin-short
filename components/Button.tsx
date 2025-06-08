@@ -1,10 +1,11 @@
+import React, { ComponentProps } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  icon?: string;
+  icon?: ComponentProps<typeof Ionicons>['name'];
   style?: any;
 }
 

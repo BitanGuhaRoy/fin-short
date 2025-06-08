@@ -1,4 +1,4 @@
-import { StyleProp, ViewStyle, TextStyle } from 'react-native';
+import { StyleProp, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 
 interface ThemeColors {
   backgroundColor: string;
@@ -39,7 +39,7 @@ const darkTheme: ThemeColors = {
   selectedBorderColor: '#4a90e2',
 };
 
-interface StyleObject {
+export interface StyleObject {
   container: StyleProp<ViewStyle>;
   content: StyleProp<ViewStyle>;
   title: StyleProp<TextStyle>;
@@ -54,9 +54,30 @@ interface StyleObject {
   categoryIconContainer: StyleProp<ViewStyle>;
   categoryContent: StyleProp<ViewStyle>;
   categoryEmoji: StyleProp<TextStyle>;
-  contentContainer: StyleProp<ViewStyle>;
-  backgroundColor: string;
+  // Feed Screen Specific Styles
+  filterContainer: StyleProp<ViewStyle>;
+  toggleCard: StyleProp<ViewStyle>;
+  toggleCardContent: StyleProp<ViewStyle>;
+  toggleIconContainer: StyleProp<ViewStyle>;
+  toggleIcon: StyleProp<TextStyle>;
+  toggleTextContainer: StyleProp<ViewStyle>;
+  toggleTitle: StyleProp<TextStyle>;
+  toggleDescription: StyleProp<TextStyle>;
+  toggleSwitchContainer: StyleProp<ViewStyle>;
+  list: StyleProp<ViewStyle>;
+  articleCard: StyleProp<ViewStyle>;
+  articleImage: StyleProp<ImageStyle>;
+  articleTitle: StyleProp<TextStyle>;
+  articleDescription: StyleProp<TextStyle>;
+  articleMeta: StyleProp<ViewStyle>;
+  authorDateText: StyleProp<TextStyle>;
+  readTimeText: StyleProp<TextStyle>;
+  beginnerBadge: StyleProp<TextStyle>;
 }
+
+export const getThemeColors = (colorScheme: 'light' | 'dark'): ThemeColors => {
+  return colorScheme === 'dark' ? darkTheme : lightTheme;
+};
 
 export const getStyle = (colorScheme: 'light' | 'dark'): StyleObject => {
   const theme = colorScheme === 'dark' ? darkTheme : lightTheme;
@@ -148,6 +169,113 @@ export const getStyle = (colorScheme: 'light' | 'dark'): StyleObject => {
     categoryEmoji: {
       fontSize: 32,
       color: theme.accentColor,
+    } as StyleProp<TextStyle>,
+    // Feed Screen Specific Styles
+    filterContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 10,
+      backgroundColor: theme.cardBackgroundColor, 
+      borderBottomWidth: 1,
+      borderBottomColor: theme.borderColor,
+    } as StyleProp<ViewStyle>,
+    toggleCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.cardBackgroundColor,
+      borderRadius: 10,
+      padding: 15,
+      marginVertical: 10, // Added margin for spacing
+      elevation: 3,
+      shadowColor: theme.textColor, // Use theme color for shadow
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    } as StyleProp<ViewStyle>,
+    toggleCardContent: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+    } as StyleProp<ViewStyle>,
+    toggleIconContainer: {
+      marginRight: 15,
+      padding: 10,
+      backgroundColor: theme.accentColor, // Use theme accent for icon background
+      borderRadius: 25, // Circular background
+    } as StyleProp<ViewStyle>,
+    toggleIcon: {
+      fontSize: 24,
+      color: theme.selectedTextColor, // Icon color on accent background
+    } as StyleProp<TextStyle>,
+    toggleTextContainer: {
+      flex: 1,
+    } as StyleProp<ViewStyle>,
+    toggleTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: theme.textColor,
+    } as StyleProp<TextStyle>,
+    toggleDescription: {
+      fontSize: 14,
+      color: theme.secondaryTextColor,
+      marginTop: 4,
+    } as StyleProp<TextStyle>,
+    toggleSwitchContainer: {
+      // Styles for the switch container, e.g., alignment or specific margins
+    } as StyleProp<ViewStyle>,
+    list: {
+      paddingBottom: 20,
+    } as StyleProp<ViewStyle>,
+    articleCard: {
+      backgroundColor: theme.cardBackgroundColor,
+      borderRadius: 8,
+      padding: 15,
+      marginHorizontal: 10,
+      marginVertical: 8,
+      elevation: 2,
+      shadowColor: theme.textColor,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+    } as StyleProp<ViewStyle>,
+    articleImage: {
+      width: '100%',
+      height: 150,
+      borderRadius: 8,
+      marginBottom: 10,
+    } as StyleProp<ImageStyle>,
+    articleTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: theme.textColor,
+      marginTop: 5,
+    } as StyleProp<TextStyle>,
+    articleDescription: {
+      fontSize: 14,
+      color: theme.secondaryTextColor,
+      marginTop: 5,
+    } as StyleProp<TextStyle>,
+    articleMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 10,
+      justifyContent: 'space-between',
+    } as StyleProp<ViewStyle>,
+    authorDateText: {
+      fontSize: 12,
+      color: theme.secondaryTextColor,
+      marginRight: 5,
+    } as StyleProp<TextStyle>,
+    readTimeText: {
+      fontSize: 12,
+      color: theme.secondaryTextColor,
+    } as StyleProp<TextStyle>,
+    beginnerBadge: {
+      fontSize: 12,
+      fontWeight: 'bold',
+      color: theme.accentColor, // Or a specific beginner color from theme
+      // Example: backgroundColor: theme.beginnerColor, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden'
     } as StyleProp<TextStyle>,
   };
 };

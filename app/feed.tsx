@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -15,7 +15,7 @@ import {
   DimensionValue,
   useColorScheme 
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
 
 interface FeedStyles {
@@ -84,8 +84,27 @@ const getThemeColors = (colorScheme: ColorSchemeName): ThemeColors => {
 export default function FeedScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
-  const [isBeginnerMode, setIsBeginnerMode] = useState(true);
+  const [isBeginnerMode, setIsBeginnerMode] = useState(false);
+  const { categories: categoriesParam } = useLocalSearchParams<{ categories?: string }>();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  
+  // Parse the categories from the URL parameter
+  useEffect(() => {
+    if (categoriesParam) {
+      try {
+        const parsedCategories = JSON.parse(categoriesParam);
+        setSelectedCategories(Array.isArray(parsedCategories) ? parsedCategories : []);
+      } catch (e) {
+        console.error('Error parsing categories:', e);
+        setSelectedCategories([]);
+      }
+    } else {
+      setSelectedCategories([]);
+    }
+  }, [categoriesParam]);
+  
+  // Debug log to check the selected categories
+  console.log('Selected categories from URL:', selectedCategories);
 
   const theme = getThemeColors(colorScheme);
 
@@ -118,7 +137,7 @@ export default function FeedScreen() {
       id: '3',
       title: 'Advanced Insurance Strategies',
       description: 'Explore advanced insurance planning techniques',
-      category: 'Insurance',
+      category: 'insurance',
       imageUrl: 'https://images.unsplash.com/photo-1504384764587-65818e5f5659',
       author: 'Robert Johnson',
       date: '2024-06-05',
@@ -164,7 +183,7 @@ export default function FeedScreen() {
     },
     {
       id: '7',
-      title: 'Understanding Mutual Funds',
+      title: 'Understanding Advanced Mutual Funds',
       description: 'Learn the basics of mutual funds and how they work',
       category: 'Mutual Fund',
       imageUrl: 'https://images.unsplash.com/photo-1504384764587-65818e5f5659',
@@ -172,7 +191,7 @@ export default function FeedScreen() {
       date: '2024-06-07',
       readTime: 5,
       content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
-      beginner: true
+      beginner: false
     },
   ];
 
@@ -186,10 +205,12 @@ export default function FeedScreen() {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: 8,
+      paddingVertical: 28,
+      paddingHorizontal: 8,
       backgroundColor: theme.cardBackgroundColor,
       borderBottomWidth: 1,
       borderBottomColor: theme.borderColor,
+      marginTop: 12,
     },
     toggleContainer: {
       flexDirection: 'row',
@@ -220,11 +241,17 @@ export default function FeedScreen() {
     },
     articleCard: {
       backgroundColor: theme.cardBackgroundColor,
-      borderRadius: 8,
-      padding: 12,
+      borderRadius: 12,
+      padding: 16,
       marginHorizontal: 12,
-      marginVertical: 6,
-      elevation: 1,
+      marginVertical: 8,
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      borderWidth: 1,
+      borderColor: theme.borderColor,
     },
     articleImage: {
       width: '100%',
@@ -314,9 +341,24 @@ export default function FeedScreen() {
     );
   };
 
-  const filteredArticles = articles.filter((article) => {
-    if (!isBeginnerMode) return true;
-    return article.beginner;
+  const displayedArticles = articles.filter((article) => {
+    // Debug log for each article's category
+    const matchesCategory = selectedCategories.length === 0 || 
+      selectedCategories.some(cat => 
+        article.category.toLowerCase() === cat.toLowerCase()
+      );
+    
+    console.log(`Article: ${article.title}, Category: ${article.category}, ` +
+      `Matches selected: ${matchesCategory}`);
+    
+    // Filter by selected categories if any are provided (case-insensitive comparison)
+    if (selectedCategories.length > 0 && !matchesCategory) {
+      return false;
+    }
+    
+    // Filter by beginner mode - show only beginner articles when isBeginnerMode is true,
+    // and only non-beginner articles when isBeginnerMode is false
+    return isBeginnerMode ? article.beginner : !article.beginner;
   });
 
   return (
@@ -326,7 +368,7 @@ export default function FeedScreen() {
           {renderBeginnerToggle()}
         </View>
         <FlatList
-          data={filteredArticles}
+          data={displayedArticles}
           renderItem={renderArticle}
           keyExtractor={item => item.id}
         />

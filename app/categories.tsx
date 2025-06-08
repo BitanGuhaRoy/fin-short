@@ -67,11 +67,15 @@ export default function CategoriesScreen() {
       return;
     }
 
+    // Get all selected categories' titles
+    const selectedCategoryTitles = categories
+      .filter(cat => selectedCategories.includes(cat.id))
+      .map(cat => cat.title);
+
     router.push({
       pathname: '/feed',
       params: { 
-        interests: selectedCategories.join(','),
-        categories: selectedCategories 
+        categories: JSON.stringify(selectedCategoryTitles)
       }
     });
   };
