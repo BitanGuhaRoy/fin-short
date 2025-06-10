@@ -13,10 +13,13 @@ import {
   ImageStyle,
   ColorSchemeName,
   DimensionValue,
-  useColorScheme 
+  useColorScheme,
+  SafeAreaView
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
+import CustomUserButton from '../components/CustomUserButton';
+
 
 interface FeedStyles {
   container: StyleProp<ViewStyle>;
@@ -106,7 +109,7 @@ export default function FeedScreen() {
   // Debug log to check the selected categories
   console.log('Selected categories from URL:', selectedCategories);
 
-  const theme = getThemeColors(colorScheme);
+  const theme = getThemeColors(colorScheme || 'light');
 
   const articles: Article[] = [
     {
@@ -199,23 +202,18 @@ export default function FeedScreen() {
     container: {
       flex: 1,
       backgroundColor: theme.backgroundColor,
-      padding: 4,
     },
     filterContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: 28,
-      paddingHorizontal: 8,
-      backgroundColor: theme.cardBackgroundColor,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.borderColor,
-      marginTop: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
     },
     toggleContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.backgroundColor,
+      backgroundColor: theme.cardBackgroundColor,
       borderRadius: 16,
       padding: 6,
       elevation: 1,
@@ -365,12 +363,15 @@ export default function FeedScreen() {
     <View style={styles.container}>
       <View style={styles.list}>
         <View style={styles.filterContainer}>
+          <CustomUserButton />
           {renderBeginnerToggle()}
         </View>
         <FlatList
           data={displayedArticles}
           renderItem={renderArticle}
           keyExtractor={item => item.id}
+          style={{ backgroundColor: theme.backgroundColor }}
+          contentContainerStyle={{ backgroundColor: theme.backgroundColor, flexGrow: 1 }}
         />
       </View>
     </View>

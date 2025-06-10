@@ -1,20 +1,24 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useColorScheme, ColorSchemeName } from 'react-native';
-import { getStyle } from '../utils/styles';
+import { useEffect } from 'react';
+import { View, ActivityIndicator, useColorScheme } from 'react-native';
 
-export default function Home() {
+export default function Index() {
   const router = useRouter();
-  const colorScheme = useColorScheme() as ColorSchemeName;
-  const styles = getStyle(colorScheme as 'light' | 'dark');
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
-    // Delay navigation slightly to ensure root layout is mounted
-    setTimeout(() => {
+    // Add a small delay to allow the navigation stack to stabilize before redirecting.
+    const timer = setTimeout(() => {
       router.replace('/categories');
-    }, 100);
+    }, 100); // A 100ms delay is a safe, standard value for this.
+
+    return () => clearTimeout(timer); // Clean up the timer if the component unmounts.
   }, [router]);
 
-  return null;
+  // Show a loading indicator during the brief delay.
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colorScheme === 'dark' ? '#121212' : '#FFFFFF' }}>
+      <ActivityIndicator size="large" color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} />
+    </View>
+  );
 }

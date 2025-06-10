@@ -130,11 +130,12 @@ export default function CategoriesScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.backgroundColor }}>
-      <ScrollView style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: theme.backgroundColor }}>
+      <ScrollView 
+        style={{ flex: 1, backgroundColor: theme.backgroundColor }}
+        contentContainerStyle={{ backgroundColor: theme.backgroundColor, flexGrow: 1 }}
+      >
         <View style={{ alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <Text style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 8, color: theme.textColor }}>Select Your Interests</Text>
-          <Text style={{ fontSize: 16, color: theme.secondaryTextColor, textAlign: 'center', marginBottom: 40 }}>Choose the topics you're interested in to see relevant articles</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', width: '100%', paddingHorizontal: 20 }}>
             {categories.map((category) => {
               const isSelected = selectedCategories.includes(category.id);
@@ -192,6 +193,6 @@ export default function CategoriesScreen() {
           Continue
         </Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }

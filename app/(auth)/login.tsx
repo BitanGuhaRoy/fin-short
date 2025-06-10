@@ -2,9 +2,22 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useOAuth } from '@clerk/clerk-expo';
-import { useWarmUpBrowser } from '@/hooks/useWarmUpBrowser'; // Assuming hooks are aliased to @/hooks or adjust path
-import { Ionicons } from '@expo/vector-icons'; // For Google icon
+import * as WebBrowser from "expo-web-browser";
+import { Ionicons } from '@expo/vector-icons';
 
+const useWarmUpBrowser = () => {
+  React.useEffect(() => {
+    if (Platform.OS === 'web') return;
+    // Warm up the browser to improve UX
+    // https://docs.expo.dev/versions/latest/sdk/webbrowser/#webbrowserwarmupasyncbrowserpackagename
+    void WebBrowser.warmUpAsync();
+    return () => {
+      // Cool down the browser when the component unmounts
+      // https://docs.expo.dev/versions/latest/sdk/webbrowser/#webbrowsercooldownasyncbrowserpackagename
+      void WebBrowser.coolDownAsync();
+    };
+  }, []);
+};
 
 export default function LoginScreen() {
   useWarmUpBrowser(); // Warm up the browser for a smoother OAuth experience
@@ -16,8 +29,8 @@ export default function LoginScreen() {
       const { createdSessionId, signIn, signUp, setActive } = await startOAuthFlow();
 
       if (createdSessionId && setActive) {
-        setActive({ session: createdSessionId });
-        router.replace('/'); // Navigate to home or dashboard after successful sign-in
+        await setActive({ session: createdSessionId });
+        // The <SignedIn> component in _layout will now render the authenticated app.
       } else {
         // Use signIn or signUp for next steps such as MFA
         // This might happen if the user needs to complete a multi-factor authentication step
@@ -38,13 +51,13 @@ export default function LoginScreen() {
   }, [startOAuthFlow, router]);
 
   const handleGuestLogin = () => {
-    router.replace('/');
+    // Guest login is not supported in this flow, but if it were,
+    // it would need a separate state management to trigger the correct UI.
+    alert('Guest login is not implemented in this authentication flow.');
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to FinShort</Text>
-      <Text style={styles.subtitle}>Your Personal Finance Assistant</Text>
 
       <View style={styles.content}>
         <Text style={styles.title}>Welcome to FinShort</Text>
