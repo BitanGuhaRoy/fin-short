@@ -1,14 +1,31 @@
-# Welcome to your Expo app 👋
+# FinShort: Your Pocket Guide to Financial Literacy
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Welcome to FinShort! This app is designed to empower you with the financial knowledge you need, whether you're a seasoned investor or just starting your journey. Stay informed with the latest market news and build your financial literacy with content tailored just for you.
 
-## Get started
+Our mission is to make financial education accessible, engaging, and effective. Make smarter financial decisions by staying aware of market trends and learning the fundamentals, all in one place.
 
-1. Install dependencies
+## Key Features
 
+- **Timely Financial News**: Get curated, up-to-date news to understand the market's pulse before making a financial call.
+- **Beginner Mode**: New to finance? Enable this mode to get articles and explanations tailored for beginners, helping you build a strong foundation.
+- **Personalized Feed**: Select categories you're interested in—like Mutual Funds, Stocks, or Crypto—to create a feed that matters to you.
+- **Clean, Modern UI**: Enjoy a beautifully designed, clutter-free interface that supports both light and dark modes for a comfortable reading experience.
+
+## Getting Started
+
+To run the project locally, follow these steps:
+
+1. **Install Dependencies:**
    ```bash
    npm install
    ```
+
+2. **Run the App:**
+   ```bash
+   npx expo start
+   ```
+
+This will start the Metro bundler. You can then run the app on an iOS simulator, Android emulator, or on your physical device using the Expo Go app.
 
 2. Start the app
 
