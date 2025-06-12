@@ -6,16 +6,19 @@ import {
   Pressable,
   RefreshControl,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Dimensions
+  Dimensions,
+  Linking
 } from 'react-native';
 import { useColorScheme } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Query } from 'appwrite';
 import { databases, DATABASE_ID, ARTICLES_COLLECTION_ID } from '../config/appwrite';
+import * as WebBrowser from 'expo-web-browser';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -33,6 +36,7 @@ interface Article {
   readTime: number;
   content: string;
   beginner: boolean;
+  url: string;
 }
 
 // -----------------------------------------------------------------------------
@@ -106,7 +110,8 @@ export default function FeedScreen() {
           : 'Unknown',
         readTime: doc.readTime ?? 5,
         content: doc.content ?? 'No content available',
-        beginner: Boolean(doc.beginner)
+        beginner: Boolean(doc.beginner),
+        url: doc.url ?? ''
       }));
       setArticles(parsed);
     } catch (err) {
@@ -143,14 +148,17 @@ export default function FeedScreen() {
       <Image source={{ uri: item.imageUrl }} style={styles.storyImage} resizeMode="cover" />
       <View style={styles.articleContent}>
         <Text style={[styles.articleTitle, { color: colors.text }]}>{item.title}</Text>
-        <Text style={[styles.articleDescription, { color: colors.secondary }]} numberOfLines={3}>
-          {item.description}
-        </Text>
-        <View style={styles.articleFooter}>
-          <Text style={[styles.articleMeta, { color: colors.secondary }]}> 
-            {item.author} • {item.date} • {item.readTime} min read
-          </Text>
-        </View>
+        <ScrollView style={styles.articleScroll} showsVerticalScrollIndicator={false}>
+          <Text style={[styles.articleDescription, { color: colors.text }]}>{item.description}</Text>
+        </ScrollView>
+        {item.url !== '' && (
+          <TouchableOpacity
+            style={[styles.knowMoreButton, { backgroundColor: colors.primary }]}
+            onPress={() => WebBrowser.openBrowserAsync(item.url)}
+          >
+            <Text style={styles.knowMoreText}>Know More</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -264,10 +272,12 @@ const styles = StyleSheet.create({
   },
   storyImage: {
     width: '100%',
-    height: SCREEN_HEIGHT * 0.6
+    height: SCREEN_HEIGHT * 0.25
   },
   articleContent: {
-    padding: 16
+    flex: 1,
+    padding: 16,
+    justifyContent: 'flex-start'
   },
   articleTitle: {
     fontSize: 18,
@@ -277,6 +287,11 @@ const styles = StyleSheet.create({
   articleDescription: {
     fontSize: 14,
     lineHeight: 20,
+    marginBottom: 12
+  },
+  articleScroll: {
+    flexGrow: 0,
+    maxHeight: SCREEN_HEIGHT * 0.45,
     marginBottom: 12
   },
   articleFooter: {
@@ -331,5 +346,16 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6
+  },
+  knowMoreButton: {
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+    alignSelf: 'flex-start'
+  },
+  knowMoreText: {
+    color: '#fff',
+    fontWeight: '600'
   }
 });
