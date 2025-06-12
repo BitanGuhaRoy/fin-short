@@ -14,6 +14,8 @@ import {
   Dimensions,
   Linking
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
 import { useColorScheme } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Query } from 'appwrite';
@@ -67,6 +69,7 @@ const themeColors = {
 // FeedScreen
 // -----------------------------------------------------------------------------
 export default function FeedScreen() {
+  const insets = useSafeAreaInsets();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -213,7 +216,7 @@ export default function FeedScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border, paddingTop: Platform.OS === 'android' ? insets.top : 0 }]}>
         <View style={styles.toggleContainer}>
           <Text style={[styles.toggleLabel, { color: colors.text }]}>Beginner</Text>
           <Pressable
