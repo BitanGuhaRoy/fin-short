@@ -1,61 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Switch, 
-  ScrollView, 
-  FlatList, 
-  StyleProp, 
-  ViewStyle, 
-  TextStyle, 
-  ImageStyle,
-  ColorSchemeName,
-  DimensionValue,
-  useColorScheme,
-  SafeAreaView
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  RefreshControl,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Dimensions
 } from 'react-native';
+import { useColorScheme } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Image as ExpoImage } from 'expo-image';
-import CustomUserButton from '../components/CustomUserButton';
+import { Query } from 'appwrite';
+import { databases, DATABASE_ID, ARTICLES_COLLECTION_ID } from '../config/appwrite';
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-interface FeedStyles {
-  container: StyleProp<ViewStyle>;
-  filterContainer: StyleProp<ViewStyle>;
-  toggleCard: StyleProp<ViewStyle>;
-  toggleCardContent: StyleProp<ViewStyle>;
-  toggleIconContainer: StyleProp<ViewStyle>;
-  toggleIcon: StyleProp<TextStyle>;
-  toggleTextContainer: StyleProp<ViewStyle>;
-  toggleTitle: StyleProp<TextStyle>;
-  toggleDescription: StyleProp<TextStyle>;
-  toggleSwitchContainer: StyleProp<ViewStyle>;
-  toggleSwitch: StyleProp<ViewStyle>;
-  list: StyleProp<ViewStyle>;
-  articleCard: StyleProp<ViewStyle>;
-  articleImage: StyleProp<ImageStyle>;
-  articleTitle: StyleProp<TextStyle>;
-  articleDescription: StyleProp<TextStyle>;
-  articleInfo: StyleProp<ViewStyle>;
-  articleAuthor: StyleProp<TextStyle>;
-  articleDate: StyleProp<TextStyle>;
-  articleReadTime: StyleProp<TextStyle>;
-}
-
-interface ThemeColors {
-  backgroundColor: string;
-  textColor: string;
-  secondaryTextColor: string;
-  borderColor: string;
-  beginnerColor: string;
-  advancedColor: string;
-  toggleColor: string;
-  toggleTextColor: string;
-  cardBackgroundColor: string;
-}
-
+// -----------------------------------------------------------------------------
+// Types
+// -----------------------------------------------------------------------------
 interface Article {
   id: string;
   title: string;
@@ -69,311 +35,301 @@ interface Article {
   beginner: boolean;
 }
 
-const getThemeColors = (colorScheme: ColorSchemeName): ThemeColors => {
-  const isDark = colorScheme === 'dark';
-  return {
-    backgroundColor: isDark ? '#121212' : '#FFFFFF',
-    textColor: isDark ? '#FFFFFF' : '#000000',
-    secondaryTextColor: isDark ? '#A0A0A0' : '#666666',
-    borderColor: isDark ? '#333333' : '#E0E0E0',
-    beginnerColor: '#4CAF50',
-    advancedColor: '#FF9800',
-    toggleColor: '#4CAF50',
-    toggleTextColor: '#4CAF50',
-    cardBackgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-  };
-};
+// -----------------------------------------------------------------------------
+// Theming
+// -----------------------------------------------------------------------------
+const themeColors = {
+  light: {
+    background: '#ffffff',
+    text: '#000000',
+    card: '#f8f9fa',
+    border: '#dee2e6',
+    primary: '#4CAF50',
+    secondary: '#666666'
+  },
+  dark: {
+    background: '#121212',
+    text: '#ffffff',
+    card: '#1e1e1e',
+    border: '#333333',
+    primary: '#81C784',
+    secondary: '#A0A0A0'
+  }
+} as const;
 
+// -----------------------------------------------------------------------------
+// FeedScreen
+// -----------------------------------------------------------------------------
 export default function FeedScreen() {
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [beginnerMode, setBeginnerMode] = useState(false);
   const router = useRouter();
+  const { categories: selectedCategories } = useLocalSearchParams<{ categories?: string }>();
+  const parsedCategories = selectedCategories ? JSON.parse(selectedCategories) as string[] : [];
   const colorScheme = useColorScheme();
-  const [isBeginnerMode, setIsBeginnerMode] = useState(false);
-  const { categories: categoriesParam } = useLocalSearchParams<{ categories?: string }>();
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  
-  // Parse the categories from the URL parameter
-  useEffect(() => {
-    if (categoriesParam) {
-      try {
-        const parsedCategories = JSON.parse(categoriesParam);
-        setSelectedCategories(Array.isArray(parsedCategories) ? parsedCategories : []);
-      } catch (e) {
-        console.error('Error parsing categories:', e);
-        setSelectedCategories([]);
-      }
-    } else {
-      setSelectedCategories([]);
+  const colors = themeColors[colorScheme === 'dark' ? 'dark' : 'light'];
+
+  // ---------------------------------------------------------------------------
+  // Fetch Helpers
+  // ---------------------------------------------------------------------------
+  const fetchArticles = async () => {
+    try {
+      setError(null);
+      const queries: string[] = [
+        Query.orderDesc('$createdAt'),
+        ...(beginnerMode 
+          ? [Query.equal('beginner', true)] 
+          : [Query.equal('beginner', false)]),
+        ...(parsedCategories.length > 0 
+          ? [Query.equal('category', parsedCategories)]
+          : [])
+      ];
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        ARTICLES_COLLECTION_ID,
+        queries
+      );
+
+      const parsed: Article[] = response.documents.map((doc: any) => ({
+        id: doc.$id,
+        title: doc.title ?? 'Untitled',
+        description: doc.description ?? '',
+        category: doc.category ?? 'General',
+        imageUrl:
+          doc.imageUrl ?? 'https://images.unsplash.com/photo-1504384764587-65818e5f5659',
+        author: doc.author ?? 'Anonymous',
+        date: doc.$createdAt
+          ? new Date(doc.$createdAt).toISOString().split('T')[0]
+          : 'Unknown',
+        readTime: doc.readTime ?? 5,
+        content: doc.content ?? 'No content available',
+        beginner: Boolean(doc.beginner)
+      }));
+      setArticles(parsed);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load articles';
+      setError(message);
+      console.error('Error fetching articles:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  }, [categoriesParam]);
-  
-  // Debug log to check the selected categories
-  console.log('Selected categories from URL:', selectedCategories);
-
-  const theme = getThemeColors(colorScheme || 'light');
-
-  const articles: Article[] = [
-    {
-      id: '1',
-      title: 'Understanding Mutual Funds',
-      description: 'Learn the basics of mutual funds and how they work',
-      category: 'Mutual Fund',
-      imageUrl: 'https://images.unsplash.com/photo-1504384764587-65818e5f5659',
-      author: 'John Doe',
-      date: '2024-06-07',
-      readTime: 5,
-      content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
-      beginner: true
-    },
-    {
-      id: '2',
-      title: 'Stock Market Basics',
-      description: 'Introduction to stock market concepts',
-      category: 'Stock',
-      imageUrl: 'https://images.unsplash.com/photo-1504384764587-65818e5f5659',
-      author: 'Jane Smith',
-      date: '2024-06-06',
-      readTime: 7,
-      content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
-      beginner: true
-    },
-    {
-      id: '3',
-      title: 'Advanced Insurance Strategies',
-      description: 'Explore advanced insurance planning techniques',
-      category: 'insurance',
-      imageUrl: 'https://images.unsplash.com/photo-1504384764587-65818e5f5659',
-      author: 'Robert Johnson',
-      date: '2024-06-05',
-      readTime: 10,
-      content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
-      beginner: false
-    },
-    {
-      id: '4',
-      title: 'RD & FD Investment Guide',
-      description: 'Everything you need to know about recurring deposits',
-      category: 'RD & FD',
-      imageUrl: 'https://images.unsplash.com/photo-1504384764587-65818e5f5659',
-      author: 'Mike Brown',
-      date: '2024-06-04',
-      readTime: 6,
-      content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
-      beginner: true
-    },
-    {
-      id: '5',
-      title: 'Crypto Market Analysis',
-      description: 'Understanding cryptocurrency trends and investments',
-      category: 'Crypto',
-      imageUrl: 'https://images.unsplash.com/photo-1504384764587-65818e5f5659',
-      author: 'Sarah Wilson',
-      date: '2024-06-03',
-      readTime: 8,
-      content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
-      beginner: false
-    },
-    {
-      id: '6',
-      title: 'Tax Planning Basics',
-      description: 'Maximize your savings with smart tax planning',
-      category: 'Tax',
-      imageUrl: 'https://images.unsplash.com/photo-1504384764587-65818e5f5659',
-      author: 'David Lee',
-      date: '2024-06-02',
-      readTime: 4,
-      content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
-      beginner: true
-    },
-    {
-      id: '7',
-      title: 'Understanding Advanced Mutual Funds',
-      description: 'Learn the basics of mutual funds and how they work',
-      category: 'Mutual Fund',
-      imageUrl: 'https://images.unsplash.com/photo-1504384764587-65818e5f5659',
-      author: 'John Doe',
-      date: '2024-06-07',
-      readTime: 5,
-      content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
-      beginner: false
-    },
-  ];
-
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.backgroundColor,
-    },
-    filterContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-    },
-    toggleContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.cardBackgroundColor,
-      borderRadius: 16,
-      padding: 6,
-      elevation: 1,
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-    },
-    toggleLabel: {
-      fontSize: 10,
-      fontWeight: '500',
-      color: theme.secondaryTextColor,
-      marginRight: 4,
-    },
-    toggleSwitch: {
-      transform: [{ scaleX: 0.5 }, { scaleY: 0.5 }],
-    },
-    list: {
-      flex: 1,
-      width: '100%' as DimensionValue,
-      paddingHorizontal: 4,
-      backgroundColor: theme.backgroundColor,
-    },
-    articleCard: {
-      backgroundColor: theme.cardBackgroundColor,
-      borderRadius: 16,
-      padding: 20,
-      marginHorizontal: 12,
-      marginVertical: 12,
-      elevation: 3,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      borderWidth: 1,
-      borderColor: theme.borderColor,
-    },
-    articleImage: {
-      width: '100%',
-      height: 150,
-      borderRadius: 12,
-      marginBottom: 12,
-    },
-    articleTitle: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      color: theme.textColor,
-      marginTop: 8,
-    },
-    articleDescription: {
-      fontSize: 14,
-      color: theme.secondaryTextColor,
-      marginTop: 6,
-    },
-    articleInfo: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: 6,
-      justifyContent: 'space-between',
-    },
-    articleMeta: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    articleAuthor: {
-      fontSize: 10,
-      color: theme.secondaryTextColor,
-      marginRight: 4,
-    },
-    articleDate: {
-      fontSize: 10,
-      color: theme.secondaryTextColor,
-    },
-    articleReadTime: {
-      fontSize: 10,
-      color: theme.secondaryTextColor,
-    },
-  });
-
-  const toggleBeginnerMode = () => {
-    setIsBeginnerMode(!isBeginnerMode);
   };
 
-  const renderBeginnerToggle = () => {
+  // Initial + whenever beginner mode toggles
+  useEffect(() => {
+    setLoading(true);
+    fetchArticles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [beginnerMode]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchArticles();
+  };
+
+  // ---------------------------------------------------------------------------
+  // Render helpers
+  // ---------------------------------------------------------------------------
+  const renderArticle = ({ item }: { item: Article }) => (
+    <TouchableOpacity
+      style={[styles.storyContainer, { backgroundColor: colors.card }]}
+      activeOpacity={0.9}
+      onPress={() => router.push(`/article-detail?id=${item.id}`)}
+    >
+      <Image source={{ uri: item.imageUrl }} style={styles.storyImage} resizeMode="cover" />
+      <View style={styles.articleContent}>
+        <Text style={[styles.articleTitle, { color: colors.text }]}>{item.title}</Text>
+        <Text style={[styles.articleDescription, { color: colors.secondary }]} numberOfLines={3}>
+          {item.description}
+        </Text>
+        <View style={styles.articleFooter}>
+          <Text style={[styles.articleMeta, { color: colors.secondary }]}> 
+            {item.author} • {item.date} • {item.readTime} min read
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+  if (error) {
     return (
-      <View style={styles.toggleContainer}>
-        <Text style={styles.toggleLabel}>Beginner</Text>
-        <Switch
-          value={isBeginnerMode}
-          onValueChange={toggleBeginnerMode}
-          thumbColor={theme.toggleTextColor}
-          trackColor={{ false: '#767577', true: theme.toggleColor }}
-          ios_backgroundColor="#3e3e3e"
-          style={styles.toggleSwitch}
-        />
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorText, { color: colors.text, marginBottom: 16 }]}>{error}</Text>
+        <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.primary }]} onPress={fetchArticles}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
-  };
-
-  const renderArticle = ({ item }: { item: Article }) => {
-    return (
-      <TouchableOpacity
-        onPress={() => router.push(`/article-detail?id=${item.id}`)}
-        style={styles.articleCard}
-      >
-        <ExpoImage
-          source={{ uri: item.imageUrl }}
-          style={styles.articleImage}
-          contentFit="cover"
-        />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.articleTitle}>{item.title}</Text>
-          <Text style={styles.articleDescription}>{item.description}</Text>
-          <View style={styles.articleInfo}>
-            <View style={styles.articleMeta}>
-              <Text style={styles.articleAuthor}>{item.author}</Text>
-              <Text style={styles.articleDate}>{item.date}</Text>
-            </View>
-            <Text style={styles.articleReadTime}>{item.readTime} min read</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const displayedArticles = articles.filter((article) => {
-    // Debug log for each article's category
-    const matchesCategory = selectedCategories.length === 0 || 
-      selectedCategories.some(cat => 
-        article.category.toLowerCase() === cat.toLowerCase()
-      );
-    
-    console.log(`Article: ${article.title}, Category: ${article.category}, ` +
-      `Matches selected: ${matchesCategory}`);
-    
-    // Filter by selected categories if any are provided (case-insensitive comparison)
-    if (selectedCategories.length > 0 && !matchesCategory) {
-      return false;
-    }
-    
-    // Filter by beginner mode - show only beginner articles when isBeginnerMode is true,
-    // and only non-beginner articles when isBeginnerMode is false
-    return isBeginnerMode ? article.beginner : !article.beginner;
-  });
+  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.list}>
-        <View style={styles.filterContainer}>
-          <CustomUserButton />
-          {renderBeginnerToggle()}
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <View style={styles.toggleContainer}>
+          <Text style={[styles.toggleLabel, { color: colors.text }]}>Beginner</Text>
+          <Pressable
+            onPress={() => setBeginnerMode(!beginnerMode)}
+            style={({ pressed }) => [
+              styles.smallToggle,
+              {
+                backgroundColor: beginnerMode ? colors.primary : colors.border,
+                opacity: pressed ? 0.7 : 1
+              }
+            ]}
+          >
+            <View
+              style={[
+                styles.smallToggleCircle,
+                {
+                  transform: [{ translateX: beginnerMode ? 16 : 0 }],
+                  backgroundColor: colors.background
+                }
+              ]}
+            />
+          </Pressable>
         </View>
-        <FlatList
-          data={displayedArticles}
-          renderItem={renderArticle}
-          keyExtractor={item => item.id}
-          style={{ backgroundColor: theme.backgroundColor }}
-          contentContainerStyle={{ backgroundColor: theme.backgroundColor, flexGrow: 1 }}
-        />
       </View>
-    </View>
+
+      {/* List */}
+      <FlatList
+        data={articles}
+        renderItem={renderArticle}
+        keyExtractor={(item) => item.id}
+        pagingEnabled
+        snapToInterval={SCREEN_HEIGHT}
+        decelerationRate="fast"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.centerContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : (
+            <View style={styles.centerContainer}>
+              <Text style={[styles.emptyText, { color: colors.text }]}>No articles available.</Text>
+            </View>
+          )
+        }
+      />
+    </SafeAreaView>
   );
 }
+
+// -----------------------------------------------------------------------------
+// Styles
+// -----------------------------------------------------------------------------
+const styles = StyleSheet.create({
+  container: {
+    flex: 1
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
+  toggleLabel: {
+    marginRight: 8,
+    fontSize: 16
+  },
+  listContent: {
+    padding: 16
+  },
+  storyContainer: {
+    height: SCREEN_HEIGHT,
+    width: '100%'
+  },
+  storyImage: {
+    width: '100%',
+    height: SCREEN_HEIGHT * 0.6
+  },
+  articleContent: {
+    padding: 16
+  },
+  articleTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8
+  },
+  articleDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12
+  },
+  articleFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  articleMeta: {
+    fontSize: 12
+  },
+  beginnerBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12
+  },
+  beginnerText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '600'
+  },
+  // Generic containers
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center'
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 6
+  },
+  retryText: {
+    color: '#fff',
+    fontWeight: '600'
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center'
+  },
+  smallToggle: {
+    width: 32,
+    height: 16,
+    borderRadius: 8,
+    padding: 2
+  },
+  smallToggleCircle: {
+    width: 12,
+    height: 12,
+    borderRadius: 6
+  }
+});
