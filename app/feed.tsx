@@ -37,6 +37,8 @@ interface Article {
   content: string;
   beginner: boolean;
   url: string;
+  videoUrl1?: string;
+  videoUrl2?: string;
 }
 
 // -----------------------------------------------------------------------------
@@ -111,7 +113,9 @@ export default function FeedScreen() {
         readTime: doc.readTime ?? 5,
         content: doc.content ?? 'No content available',
         beginner: Boolean(doc.beginner),
-        url: doc.url ?? ''
+        url: doc.url ?? '',
+        videoUrl1: doc.videoUrl1 ?? '',
+        videoUrl2: doc.videoUrl2 ?? '',
       }));
       setArticles(parsed);
     } catch (err) {
@@ -140,10 +144,8 @@ export default function FeedScreen() {
   // Render helpers
   // ---------------------------------------------------------------------------
   const renderArticle = ({ item }: { item: Article }) => (
-    <TouchableOpacity
+    <View
       style={[styles.storyContainer, { backgroundColor: colors.card }]}
-      activeOpacity={0.9}
-      onPress={() => router.push(`/article-detail?id=${item.id}`)}
     >
       <Image source={{ uri: item.imageUrl }} style={styles.storyImage} resizeMode="cover" />
       <View style={styles.articleContent}>
@@ -151,16 +153,47 @@ export default function FeedScreen() {
         <ScrollView style={styles.articleScroll} showsVerticalScrollIndicator={false}>
           <Text style={[styles.articleDescription, { color: colors.text }]}>{item.description}</Text>
         </ScrollView>
-        {item.url !== '' && (
+        {/* Action buttons row */}
+        <View style={styles.videoButtonsRow}>
           <TouchableOpacity
-            style={[styles.knowMoreButton, { backgroundColor: colors.primary }]}
-            onPress={() => WebBrowser.openBrowserAsync(item.url)}
+            style={[styles.knowMoreButton, { backgroundColor: colors.primary, flex:1, marginRight:4 }]}
+            onPress={() =>
+              WebBrowser.openBrowserAsync(
+                `https://www.google.co.in/search?q=${encodeURIComponent(item.title)}&hl=en&gl=in`
+              )
+            }
           >
-            <Text style={styles.knowMoreText}>Know More</Text>
+            <Text style={styles.knowMoreText} numberOfLines={1}>Google Search</Text>
           </TouchableOpacity>
-        )}
+          <TouchableOpacity
+            style={[styles.knowMoreButton, { backgroundColor: colors.primary, flex:1, marginRight:4 }]}
+            onPress={() =>
+              WebBrowser.openBrowserAsync(
+                `https://www.youtube.com/results?search_query=${encodeURIComponent(item.title + ' india')}&hl=en&gl=in`
+              )
+            }
+          >
+            <Text style={styles.knowMoreText} numberOfLines={1}>Search YouTube</Text>
+          </TouchableOpacity>
+          {item.videoUrl1 && (
+            <TouchableOpacity
+              style={[styles.knowMoreButton, { backgroundColor: colors.primary, flex:1, marginHorizontal:4 }]}
+              onPress={() => WebBrowser.openBrowserAsync(item.videoUrl1!)}
+            >
+              <Text style={styles.knowMoreText} numberOfLines={1}>Video 1</Text>
+            </TouchableOpacity>
+          )}
+          {item.videoUrl2 && (
+            <TouchableOpacity
+              style={[styles.knowMoreButton, { backgroundColor: colors.primary, flex:1, marginLeft:4 }]}
+              onPress={() => WebBrowser.openBrowserAsync(item.videoUrl2!)}
+            >
+              <Text style={styles.knowMoreText} numberOfLines={1}>Video 2</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   // ---------------------------------------------------------------------------
@@ -357,5 +390,10 @@ const styles = StyleSheet.create({
   knowMoreText: {
     color: '#fff',
     fontWeight: '600'
-  }
+  },
+  videoButtonsRow: {
+    flexDirection: 'row',
+    width: '100%',
+    marginTop: 8
+  },
 });
