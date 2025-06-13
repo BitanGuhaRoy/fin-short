@@ -135,7 +135,29 @@ export default function FeedScreen() {
         videoUrl1: doc.videoUrl1 ?? '',
         videoUrl2: doc.videoUrl2 ?? '',
       }));
-      setArticles(parsed);
+
+      // Shuffle articles within each date group
+      function shuffle<T>(array: T[]): T[] {
+        // Fisher-Yates shuffle
+        const arr = array.slice();
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+      const grouped: { [date: string]: Article[] } = {};
+      for (const article of parsed) {
+        if (!grouped[article.date]) grouped[article.date] = [];
+        grouped[article.date].push(article);
+      }
+      // Sort dates descending
+      const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+      const shuffled: Article[] = [];
+      for (const date of sortedDates) {
+        shuffled.push(...shuffle(grouped[date]));
+      }
+      setArticles(shuffled);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load articles';
       setError(message);
