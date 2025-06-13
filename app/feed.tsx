@@ -21,6 +21,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Query } from 'appwrite';
 import { databases, DATABASE_ID, ARTICLES_COLLECTION_ID } from '../config/appwrite';
 import * as WebBrowser from 'expo-web-browser';
+import { useAuth } from '@clerk/clerk-expo';
+import { Ionicons } from '@expo/vector-icons';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -69,17 +71,28 @@ const themeColors = {
 // FeedScreen
 // -----------------------------------------------------------------------------
 export default function FeedScreen() {
+  const colorScheme = useColorScheme();
+  const colors = themeColors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const router = useRouter();
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.replace('/(auth)/login');
+    } catch (err) {
+      console.error('Error signing out:', err);
+    }
+  };
+
   const insets = useSafeAreaInsets();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [beginnerMode, setBeginnerMode] = useState(false);
-  const router = useRouter();
   const { categories: selectedCategories } = useLocalSearchParams<{ categories?: string }>();
   const parsedCategories = selectedCategories ? JSON.parse(selectedCategories) as string[] : [];
-  const colorScheme = useColorScheme();
-  const colors = themeColors[colorScheme === 'dark' ? 'dark' : 'light'];
 
   // ---------------------------------------------------------------------------
   // Fetch Helpers
@@ -225,8 +238,8 @@ export default function FeedScreen() {
               styles.smallToggle,
               {
                 backgroundColor: beginnerMode ? colors.primary : colors.border,
-                opacity: pressed ? 0.7 : 1
-              }
+                opacity: pressed ? 0.7 : 1,
+              },
             ]}
           >
             <View
@@ -234,12 +247,15 @@ export default function FeedScreen() {
                 styles.smallToggleCircle,
                 {
                   transform: [{ translateX: beginnerMode ? 16 : 0 }],
-                  backgroundColor: colors.background
-                }
+                  backgroundColor: colors.background,
+                },
               ]}
             />
           </Pressable>
         </View>
+        <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton}>
+          <Ionicons name="log-out-outline" size={24} color={colors.primary} />
+        </TouchableOpacity>
       </View>
 
       {/* List */}
@@ -287,8 +303,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
   toggleContainer: {
     flexDirection: 'row',
@@ -316,18 +333,18 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start'
   },
   articleTitle: {
-    fontSize: 18,
+    fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 8
   },
   articleDescription: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 20,
+    lineHeight: 28,
     marginBottom: 12
   },
   articleScroll: {
     flexGrow: 0,
-    maxHeight: SCREEN_HEIGHT * 0.45,
+    maxHeight: SCREEN_HEIGHT * 0.7,
     marginBottom: 12
   },
   articleFooter: {
@@ -398,5 +415,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '100%',
     marginTop: 8
+  },
+  signOutButton: {
+    padding: 8,
   },
 });
