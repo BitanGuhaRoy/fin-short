@@ -124,7 +124,9 @@ export default function FeedScreen() {
           doc.imageUrl ?? 'https://images.unsplash.com/photo-1504384764587-65818e5f5659',
         author: doc.author ?? 'Anonymous',
         date: doc.$createdAt
-          ? new Date(doc.$createdAt).toISOString().split('T')[0]
+          ? new Date(new Date(doc.$createdAt).getTime() + 5.5 * 60 * 60 * 1000)
+              .toISOString()
+              .split('T')[0]
           : 'Unknown',
         readTime: doc.readTime ?? 5,
         content: doc.content ?? 'No content available',
@@ -160,57 +162,101 @@ export default function FeedScreen() {
   // Render helpers
   // ---------------------------------------------------------------------------
   const renderArticle = ({ item }: { item: Article }) => (
+  <View
+    style={[
+      styles.fullScreenCard,
+      { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' }
+    ]}
+  >
+    <View style={styles.fullScreenImageWrapper}>
+      <Image source={{ uri: item.imageUrl }} style={styles.fullScreenImage} resizeMode="cover" />
+      {/* Gradient overlay */}
+      <View style={styles.cardImageGradient} />
+
+    </View>
     <View
-      style={[styles.storyContainer, { backgroundColor: colors.card }]}
+      style={[
+        styles.fullScreenContentWrapper,
+        { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' }
+      ]}
     >
-      <Image source={{ uri: item.imageUrl }} style={styles.storyImage} resizeMode="cover" />
-      <View style={styles.articleContent}>
-        <Text style={[styles.articleTitle, { color: colors.text }]}>{item.title}</Text>
-        <ScrollView style={styles.articleScroll} showsVerticalScrollIndicator={false}>
-          <Text style={[styles.articleDescription, { color: colors.text }]}>{item.description}</Text>
-        </ScrollView>
-        {/* Action buttons row */}
-        <View style={styles.videoButtonsRow}>
-          <TouchableOpacity
-            style={[styles.knowMoreButton, { backgroundColor: colors.primary, flex:1, marginRight:4 }]}
-            onPress={() =>
-              WebBrowser.openBrowserAsync(
-                `https://www.google.co.in/search?q=${encodeURIComponent(item.title)}&hl=en&gl=in`
-              )
-            }
-          >
-            <Text style={styles.knowMoreText} numberOfLines={1}>Google Search</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.knowMoreButton, { backgroundColor: colors.primary, flex:1, marginRight:4 }]}
-            onPress={() =>
-              WebBrowser.openBrowserAsync(
-                `https://www.youtube.com/results?search_query=${encodeURIComponent(item.title + ' india')}&hl=en&gl=in`
-              )
-            }
-          >
-            <Text style={styles.knowMoreText} numberOfLines={1}>Search YouTube</Text>
-          </TouchableOpacity>
-          {item.videoUrl1 && (
-            <TouchableOpacity
-              style={[styles.knowMoreButton, { backgroundColor: colors.primary, flex:1, marginHorizontal:4 }]}
-              onPress={() => WebBrowser.openBrowserAsync(item.videoUrl1!)}
-            >
-              <Text style={styles.knowMoreText} numberOfLines={1}>Video 1</Text>
-            </TouchableOpacity>
-          )}
-          {item.videoUrl2 && (
-            <TouchableOpacity
-              style={[styles.knowMoreButton, { backgroundColor: colors.primary, flex:1, marginLeft:4 }]}
-              onPress={() => WebBrowser.openBrowserAsync(item.videoUrl2!)}
-            >
-              <Text style={styles.knowMoreText} numberOfLines={1}>Video 2</Text>
-            </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.fullScreenContentScroll} showsVerticalScrollIndicator={false}>
+        {/* Author + meta row */}
+        <View style={styles.metaRow}>
+          {item.author && item.author !== 'Anonymous' && (
+            <Text style={[styles.metaText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>{item.author}</Text>
           )}
         </View>
-      </View>
+        {/* Title */}
+        <Text style={[styles.cardTitle, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>{item.title}</Text>
+        {/* Description */}
+        <View
+          style={[
+            styles.cardDescriptionContainer,
+            { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' }
+          ]}
+        >
+          <Text style={[
+            styles.cardDescriptionLarge,
+            { color: colorScheme === 'dark' ? '#fff' : '#000' }
+          ]}>{item.description}</Text>
+        </View>
+        {/* Content */}
+        {item.content && item.content !== 'No content available' && (
+          <Text style={[
+            styles.fullScreenContent,
+            { color: colorScheme === 'dark' ? '#fff' : '#000' }
+          ]}>{item.content}</Text>
+        )}
+        {/* Date at bottom */}
+        <Text style={{
+          color: colorScheme === 'dark' ? '#fff' : '#000',
+          fontSize: 14,
+          opacity: 0.7,
+          marginTop: 16,
+          marginBottom: 2,
+          textAlign: 'right',
+        }}>{item.date}</Text>
+        {/* Action buttons row */}
+        <View style={styles.cardButtonRow}>
+          <TouchableOpacity
+            style={[styles.cardButton, { backgroundColor: colors.primary }]}
+            onPress={() => WebBrowser.openBrowserAsync(`https://www.google.co.in/search?q=${encodeURIComponent(item.title)}&hl=en&gl=in`)}
+          >
+            <Ionicons name="search" size={18} color="#fff" style={{ marginRight: 6 }} />
+            <Text style={styles.cardButtonText}>Google</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.cardButton, { backgroundColor: '#FF0000' }]}
+            onPress={() => WebBrowser.openBrowserAsync(`https://www.youtube.com/results?search_query=${encodeURIComponent(item.title + ' india')}&hl=en&gl=in`)}
+          >
+            <Ionicons name="logo-youtube" size={18} color="#fff" style={{ marginRight: 6 }} />
+            <Text style={styles.cardButtonText}>YouTube</Text>
+          </TouchableOpacity>
+          {item.videoUrl1 ? (
+            <TouchableOpacity
+              style={[styles.cardButton, { backgroundColor: colors.primary }]}
+              onPress={() => WebBrowser.openBrowserAsync(item.videoUrl1!)}
+            >
+              <Ionicons name="play-circle" size={18} color="#fff" style={{ marginRight: 6 }} />
+              <Text style={styles.cardButtonText}>Video 1</Text>
+            </TouchableOpacity>
+          ) : null}
+          {item.videoUrl2 ? (
+            <TouchableOpacity
+              style={[styles.cardButton, { backgroundColor: colors.primary }]}
+              onPress={() => WebBrowser.openBrowserAsync(item.videoUrl2!)}
+            >
+              <Ionicons name="play-circle" size={18} color="#fff" style={{ marginRight: 6 }} />
+              <Text style={styles.cardButtonText}>Video 2</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </ScrollView>
     </View>
-  );
+  </View>
+);
+
 
   // ---------------------------------------------------------------------------
   // Render
@@ -267,7 +313,8 @@ export default function FeedScreen() {
         snapToInterval={SCREEN_HEIGHT}
         decelerationRate="fast"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={{}}
+        style={{ flex: 1 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -294,9 +341,9 @@ export default function FeedScreen() {
 
 // -----------------------------------------------------------------------------
 // Styles
-// -----------------------------------------------------------------------------
+// --------------------------------------------------------------------------
 const styles = StyleSheet.create({
-  container: {
+  container: { 
     flex: 1
   },
   header: {
@@ -360,12 +407,198 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12
   },
-  beginnerText: {
-    fontSize: 12,
-    color: '#fff',
-    fontWeight: '600'
+  // --- Modern Card Styles ---
+  // Full screen card for paging
+  fullScreenCard: {
+    height: SCREEN_HEIGHT,
+    width: '100%',
   },
-  // Generic containers
+  fullScreenImageWrapper: {
+    width: '100%',
+    height: SCREEN_HEIGHT * 0.25,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '100%',
+  },
+  fullScreenContentWrapper: {
+    height: SCREEN_HEIGHT * 0.75,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 24,
+    flex: 1,
+  },
+  fullScreenContentScroll: {
+    flexGrow: 1,
+    paddingBottom: 40,
+  },
+  fullScreenContent: {
+    fontSize: 16,
+    color: '#222',
+    marginTop: 10,
+    marginBottom: 20,
+    lineHeight: 22,
+    opacity: 0.97,
+  },
+  glassCardWrapper: {
+    display: 'none', // Hide old card style
+  },
+  cardShadow: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 28,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    ...(Platform.OS === 'ios' ? { backdropFilter: 'blur(16px)' } : {}),
+  },
+  cardImageWrapper: {
+    position: 'relative',
+    width: '100%',
+    height: 220,
+    overflow: 'hidden',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  cardImageGradient: {
+    ...StyleSheet.absoluteFillObject,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+  },
+  categoryPill: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    backgroundColor: 'rgba(30,30,30,0.78)',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    zIndex: 2,
+  },
+  categoryPillText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 13,
+    letterSpacing: 0.5,
+  },
+  beginnerBadgeModern: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    backgroundColor: '#4CAF50',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    zIndex: 2,
+    shadowColor: '#4CAF50',
+    shadowOpacity: 0.18,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+  },
+  beginnerTextModern: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 13,
+    letterSpacing: 0.5,
+  },
+  cardContentWrapper: {
+    padding: 18,
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  avatarCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#e0e0e0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  avatarInitials: {
+    color: '#4CAF50',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  metaText: {
+    color: '#222',
+    fontSize: 13,
+    fontWeight: '600',
+    marginRight: 4,
+  },
+  metaDot: {
+    color: '#aaa',
+    fontSize: 15,
+    marginHorizontal: 2,
+    fontWeight: 'bold',
+  },
+  cardTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 6,
+  },
+  cardDescription: {
+    fontSize: 15,
+    color: '#333',
+    marginBottom: 14,
+    lineHeight: 21,
+    opacity: 0.94,
+  },
+  cardDescriptionContainer: {
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 18,
+  },
+  cardDescriptionLarge: {
+    fontSize: 20,
+    lineHeight: 27,
+    opacity: 0.98,
+    fontWeight: '500',
+  },
+  cardButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  cardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
+    paddingHorizontal: 13,
+    borderRadius: 16,
+    marginRight: 6,
+    marginBottom: 6,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.13,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+  },
+  cardButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+    letterSpacing: 0.2,
+  },
+  // --- End Modern Card Styles ---
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
