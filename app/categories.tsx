@@ -38,13 +38,18 @@ interface Category {
 }
 
 const categories: Category[] = [
-  { id: 'mutual-funds', title: 'Mutual Fund', description: 'Invest in professionally managed funds', emoji: '📊' },
-  { id: 'stocks', title: 'Stock', description: 'Buy and sell individual company shares', emoji: '📈' },
-  { id: 'insurance', title: 'Insurance', description: 'Protect your financial future with insurance', emoji: '🛡️' },
-  { id: 'fraud', title: 'Latest Frauds', description: 'Stay informed about common financial scams', emoji: '🚨' },
-  { id: 'rd-fd', title: 'RD & FD', description: 'Recurring Deposit & Fixed Deposit', emoji: '💰' },
-  { id: 'crypto', title: 'Crypto', description: 'Digital currencies and blockchain', emoji: '⚡' },
+  { id: 'mutual-funds', title: 'Mutual Fund', description: 'Discover mutual fund trends', emoji: '📊' },
+  { id: 'stocks', title: 'Stock', description: 'Stay with latest stock news', emoji: '📈' },
+  { id: 'ipo', title: 'IPO', description: 'Stay ahead with IPO news', emoji: '🚀' },
+  // { id: 'rd-fd', title: 'RD & FD', description: 'Recurring Deposit & Fixed Deposit', emoji: '💰' },
+  { id: 'crypto', title: 'Crypto', description: 'Stay updated on crypto prices and trends', emoji: '⚡' },
+  { id: 'fraud', title: 'Latest Frauds', description: 'Stay informed about trending financial scams', emoji: '🚨' },
+  { id: 'cards', title: 'Credit Card', description: 'Know the best cards, offers, and rewards', emoji: '💳' }, 
   { id: 'tax', title: 'Tax', description: 'Tax planning and compliance', emoji: '📝' },
+  { id: 'insurance', title: 'Insurance', description: 'Stay aware of insurance news', emoji: '🛡️' },
+  
+
+
 ];
 
 export default function CategoriesScreen() {
